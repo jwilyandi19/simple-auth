@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -30,6 +31,10 @@ type UserResponse struct {
 	Username string `json:"username"`
 	FullName string `json:"full_name"`
 }
+
+var (
+	ErrDataExist = fmt.Errorf("data exist")
+)
 
 func NewHandler(user user.UserUsecase) *Handler {
 	return &Handler{user}
@@ -78,13 +83,19 @@ func (h *Handler) SignUpHandler(ctx *gin.Context) {
 		Password: req.Password,
 	}
 
-	err = h.userUsecase.Register(ctx, arg)
+	token, err := h.userUsecase.Register(ctx, arg)
+	if err == ErrDataExist {
+		ctx.JSON(http.StatusConflict, errorResponse(err))
+		return
+	}
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, "")
+	ctx.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
 }
 
 func (h *Handler) UserListHandler(ctx *gin.Context) {

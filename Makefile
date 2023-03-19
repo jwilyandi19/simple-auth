@@ -1,5 +1,6 @@
 migrate-up:
 	migrate -path db/migration -database "mysql://root:root@tcp(localhost:3306)/auth_db" -verbose up
+	go run cmd/seed/app.go
 
 migrate-down:
 	migrate -path db/migration -database "mysql://root:root@tcp(localhost:3306)/auth_db" -verbose down

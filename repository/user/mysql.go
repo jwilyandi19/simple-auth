@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 
 	domain "github.com/jwilyandi19/simple-auth/domain/user"
@@ -46,7 +45,6 @@ func (m *mysqlUserRepository) FetchUser(ctx context.Context, req domain.FetchUse
 			log.Println("[FetchUser-MySQL] ScanRow err", err.Error())
 			return []domain.User{}, err
 		}
-		fmt.Println(t)
 		result = append(result, t)
 	}
 	return result, nil
@@ -104,4 +102,25 @@ func (m *mysqlUserRepository) CreateUser(ctx context.Context, req domain.CreateU
 		Username: req.Username,
 		FullName: req.FullName,
 	}, nil
+}
+
+func (m *mysqlUserRepository) IsUserExist(ctx context.Context, username string) (bool, error) {
+	rows, err := m.Conn.QueryContext(ctx, isUserExist, username)
+	if err != nil {
+		log.Println("[GetUser-MySQL] QueryContext err", err.Error())
+		return false, err
+	}
+
+	defer func() {
+		errRow := rows.Close()
+		if errRow != nil {
+			log.Println("[GetUser-MySQL] rowsClose err", err.Error())
+		}
+	}()
+
+	if !rows.Next() {
+		return false, nil
+	}
+
+	return true, nil
 }

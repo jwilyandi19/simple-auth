@@ -15,7 +15,7 @@ type userUsecase struct {
 type UserUsecase interface {
 	FetchUsers(ctx context.Context, req domain.FetchUserRequest) ([]domain.User, error)
 	Login(ctx context.Context, username string, password string) (string, error)
-	Register(ctx context.Context, req domain.CreateUserRequest) error
+	Register(ctx context.Context, req domain.CreateUserRequest) (string, error)
 }
 
 func NewUserUsecase(u domain.UserRepository) UserUsecase {
@@ -53,18 +53,33 @@ func (u *userUsecase) Login(ctx context.Context, username string, password strin
 	return token, nil
 }
 
-func (u *userUsecase) Register(ctx context.Context, req domain.CreateUserRequest) error {
+func (u *userUsecase) Register(ctx context.Context, req domain.CreateUserRequest) (string, error) {
+	exist, err := u.userRepo.IsUserExist(ctx, req.Username)
+	if err != nil {
+		log.Println("[UserUsecase-Register] error to check exist: ", err.Error())
+		return "", err
+	}
+
+	if exist {
+		return "", ErrDataExist
+	}
+
 	cryptPass, err := utils.HashPassword(req.Password)
 	if err != nil {
 		log.Println("[UserUsecase-Register] error to crypt: ", err.Error())
-		return err
+		return "", err
 	}
 	req.Password = cryptPass
-	_, err = u.userRepo.CreateUser(ctx, req)
+	user, err := u.userRepo.CreateUser(ctx, req)
 	if err != nil {
 		log.Println("[UserUsecase-Register] error: ", err.Error())
-		return err
+		return "", err
+	}
+	token, err := utils.GenerateToken(user.Username)
+	if err != nil {
+		log.Println("[UserUsecase-Register] error to call bcrypt: ", err.Error())
+		return "", err
 	}
 
-	return err
+	return token, nil
 }
