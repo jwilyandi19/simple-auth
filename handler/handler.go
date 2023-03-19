@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -41,6 +42,12 @@ func (h *Handler) LoginHandler(ctx *gin.Context) {
 		return
 	}
 
+	err := validate(req.Username, req.Password)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
 	token, err := h.userUsecase.Login(ctx, req.Username, req.Password)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
@@ -59,13 +66,19 @@ func (h *Handler) SignUpHandler(ctx *gin.Context) {
 		return
 	}
 
+	err := validate(req.Username, req.Password)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
 	arg := domain.CreateUserRequest{
 		Username: req.Username,
 		FullName: req.FullName,
 		Password: req.Password,
 	}
 
-	err := h.userUsecase.Register(ctx, arg)
+	err = h.userUsecase.Register(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -102,4 +115,24 @@ func (h *Handler) UserListHandler(ctx *gin.Context) {
 
 func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
+}
+
+func validate(username string, password string) error {
+	if username == "" {
+		return errors.New("username required")
+	}
+
+	if len(username) < 2 {
+		return errors.New("username must more than 2 character")
+	}
+
+	if password == "" {
+		return errors.New("password required")
+	}
+
+	if len(password) < 5 {
+		return errors.New("password most more than 5 character")
+	}
+
+	return nil
 }

@@ -14,7 +14,11 @@ func AuthorizationMiddleware(ctx *gin.Context) {
 	token := strings.TrimPrefix(s, "Bearer ")
 
 	if err := utils.ValidateToken(token); err != nil {
-		ctx.AbortWithStatus(http.StatusUnauthorized)
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
+}
+
+func errorResponse(err error) gin.H {
+	return gin.H{"error": err.Error()}
 }
