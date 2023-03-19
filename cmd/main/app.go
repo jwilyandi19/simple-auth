@@ -46,5 +46,8 @@ func main() {
 	route := r.Group("/", middleware.AuthorizationMiddleware)
 	route.GET("/user/userlist", handler.UserListHandler)
 
-	r.Run()
+	err = r.Run(":3000")
+	if err != nil {
+		log.Fatal("failed to run gin: ", err)
+	}
 }
